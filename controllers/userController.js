@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 const redis_client = require("../redis_connect");
 
 exports.createUser = async (req, res) => {
@@ -41,17 +42,21 @@ exports.loginUser = async (req, res) => {
       message: "login success",
       data: { access_token, refresh_token },
     });
-  } catch (error) {}
+  } catch (error) {
+    return res
+      .status(401)
+      .json({ status: true, message: "login fail", data: error });
+  }
 };
 
-exports.getAccessToken = (req, res) => {
-  const username = req.userData.sub;
+exports.createAccessToken = (req, res) => {
+  const user_id = req.userData.sub;
   const access_token = jwt.sign(
-    { sub: username },
+    { sub: user_id },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: process.env.JWT_ACCESS_TIME }
   );
-  const refresh_token = generateRefreshToken(username);
+  const refresh_token = generateRefreshToken(user_id);
   return res.json({
     status: true,
     message: "success",
@@ -59,13 +64,14 @@ exports.getAccessToken = (req, res) => {
   });
 };
 
-exports.logoutUser = async (req, res) => {
+exports.logoutUser = (req, res) => {
   const user_id = req.userData.sub;
+  const token = req.token;
 
   //remove the refresh token
-  await redis_client.del(user_id.toString());
+  redis_client.del(user_id.toString());
   //blacklist current access token
-  await redis_client.set("BL_" + user_id.toString(), token);
+  redis_client.set("BL_" + user_id.toString(), token);
   return res.json({ status: true, message: "success" });
 };
 
