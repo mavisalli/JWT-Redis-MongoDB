@@ -1,10 +1,10 @@
-const route = require(express).Router();
+const route = require("express").Router();
 
 const {
   createUser,
   loginUser,
   logoutUser,
-  getAccessToken,
+  createAccessToken,
 } = require("../controllers/userController");
 const {
   verifyToken,
@@ -13,7 +13,7 @@ const {
 
 route.post("/register", createUser);
 route.post("/login", loginUser);
-route.post("/token", verifyRefreshToken, getAccessToken);
+route.post("/token", verifyRefreshToken, createAccessToken);
 route.get("/logout", verifyToken, logoutUser);
 
 module.exports = route;
